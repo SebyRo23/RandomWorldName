@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 
 @Mod(RandomWorldName.MODID)
 public class RandomWorldName {
@@ -32,12 +33,17 @@ public class RandomWorldName {
             Button generateName = Button.builder(Component.translatable("button.randomworldname.generate"), button -> {
                 cws.tabNavigationBar.tabs.stream().forEach(internalTab -> {
                     if (internalTab instanceof CreateWorldScreen.GameTab gTab) {
-                        String name;
-                        if (Config.ORDER.get()) {
-                            name = getRandomEntry(Config.PLACES.get()) + Config.SEPARATOR.get() + getRandomEntry(Config.ADJECTIVES.get());
-                        } else {
-                            name = getRandomEntry(Config.ADJECTIVES.get()) + Config.SEPARATOR.get() + getRandomEntry(Config.PLACES.get());
-                        }
+                        List<Supplier<String>> patterns = List.of(
+                                () -> "The " + capitalizeFirst(capitalizeFirst(getRandomEntry(Config.ADJECTIVES.get()))) + " " + capitalizeFirst(getRandomEntry(Config.PLACES.get())),
+                                () -> "The " + capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of " + capitalizeFirst(getRandomEntry(Config.ADJECTIVES.get())) + " " + capitalizeFirst(getRandomEntry(Config.NOUNS.get())),
+                                () -> "The " + capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of " + capitalizeFirst(getRandomEntry(Config.NOUNS.get())),
+                                () -> "The " + capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of the " + capitalizeFirst(getRandomEntry(Config.NOUNS.get())),
+                                () -> capitalizeFirst(getRandomEntry(Config.ADJECTIVES.get())) + " " + capitalizeFirst(getRandomEntry(Config.PLACES.get())),
+                                () -> capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of " + capitalizeFirst(capitalizeFirst(getRandomEntry(Config.ADJECTIVES.get()))) + " " + capitalizeFirst(getRandomEntry(Config.NOUNS.get())),
+                                () -> capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of " + capitalizeFirst(getRandomEntry(Config.NOUNS.get())),
+                                () -> capitalizeFirst(getRandomEntry(Config.PLACES.get())) + " of the " + capitalizeFirst(getRandomEntry(Config.NOUNS.get()))
+                        );
+                        String name = getRandomEntry(patterns.stream().map(Supplier::get).toList());
                         gTab.nameEdit.setValue(name);
                     }
                 });
@@ -46,7 +52,6 @@ public class RandomWorldName {
                 if (tab instanceof CreateWorldScreen.GameTab gameTab) {
                     gameTab.layout.visitChildren(child -> {
                         if (child instanceof LinearLayout worldNameLayout) {
-
                             worldNameLayout.addChild(generateName);
                         }
                     });
@@ -70,5 +75,9 @@ public class RandomWorldName {
             i++;
         }
         return "";
+    }
+    private String capitalizeFirst(String input) {
+        if (input == null || input.isEmpty()) return input;
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 }
